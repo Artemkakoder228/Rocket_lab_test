@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from aiogram import Bot, Dispatcher
-from middlewares import ThrottlingMiddleware
+from middlewares import ThrottlingMiddleware, TimingMiddleware
 from aiogram.types import BotCommand
 from config import BOT_TOKEN
 from handlers import navigation, start, family, mission, shop, mining, admin, games, pvp, bonus, webapp
@@ -17,6 +17,10 @@ async def main():
 
     bot = Bot(token=BOT_TOKEN)
     dp = Dispatcher()
+
+    # Додаємо вимірювач часу першим, щоб він міряв увесь ланцюг
+    dp.message.middleware(TimingMiddleware())
+    dp.callback_query.middleware(TimingMiddleware())
 
     dp.message.middleware(ThrottlingMiddleware(rate_limit=1.0))
     dp.callback_query.middleware(ThrottlingMiddleware(rate_limit=1.0))

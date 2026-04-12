@@ -18,6 +18,9 @@ class Database:
         self.connection = sqlite3.connect(DATABASE_URL, check_same_thread=False, isolation_level=None, detect_types=sqlite3.PARSE_DECLTYPES)
         self.connection.execute("PRAGMA journal_mode=WAL;")
         self.connection.execute("PRAGMA synchronous=NORMAL;")
+        self.connection.execute("PRAGMA temp_store=MEMORY;")    # Тримати тимчасові таблиці в ОЗУ
+        self.connection.execute("PRAGMA mmap_size=30000000000;") # Включити відображення бази в пам'ять (mmap)
+        self.connection.execute("PRAGMA cache_size=-64000;")     # Задати розмір кешу сторінок у 64МБ
         self.cursor = self.connection.cursor()
         self.lock = threading.Lock()
         self.create_tables()
@@ -42,6 +45,15 @@ class Database:
                     mine_lvl INTEGER DEFAULT 0,
                     last_collection TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     
+                    mine_lvl_earth INTEGER DEFAULT 1,
+                    last_coll_earth TIMESTAMP,
+                    mine_lvl_moon INTEGER DEFAULT 0,
+                    last_coll_moon TIMESTAMP,
+                    mine_lvl_mars INTEGER DEFAULT 0,
+                    last_coll_mars TIMESTAMP,
+                    mine_lvl_jupiter INTEGER DEFAULT 0,
+                    last_coll_jupiter TIMESTAMP,
+                    
                     mission_end_time TIMESTAMP DEFAULT NULL,
                     active_launch_id INTEGER DEFAULT NULL,
                     active_mission_id INTEGER DEFAULT NULL,
@@ -49,6 +61,7 @@ class Database:
 
                     last_raid_time TIMESTAMP DEFAULT NULL,
                     shield_until TIMESTAMP DEFAULT NULL,
+                    under_attack_until TIMESTAMP,
 
                     -- Ресурси
                     res_iron INTEGER DEFAULT 0,
@@ -71,7 +84,9 @@ class Database:
                     family_id INTEGER DEFAULT NULL REFERENCES families(id) ON DELETE SET NULL,
                     role TEXT DEFAULT 'recruit',
                     last_active TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    last_fortune TIMESTAMP
+                    last_fortune TIMESTAMP,
+                    quiz_attempts INTEGER DEFAULT 0,
+                    last_quiz_date DATE
                 )
             """)
 
@@ -718,30 +733,31 @@ class Database:
         with self.connection:
             self.cursor.execute(query, tuple(params))
 
-    def check_quiz_attempts(self, family_id):
+    def check_quiz_attempts(self, user_id):
         import datetime
         with self.connection:
-            self.cursor.execute("SELECT quiz_attempts, last_quiz_date FROM families WHERE id = ?", (family_id,))
+            self.cursor.execute("SELECT quiz_attempts, last_quiz_date FROM users WHERE user_id = ?", (user_id,))
             res = self.cursor.fetchone()
             if not res: return False, 0
             
             attempts, last_date = res[0], res[1]
             today = datetime.date.today()
             
-            if last_date != today:
+            # last_date може бути рядком, тому приводимо до str
+            if not last_date or str(last_date) != str(today):
                 # Скидаємо лічильник на новий день
-                self.cursor.execute("UPDATE families SET quiz_attempts = 0, last_quiz_date = ? WHERE id = ?", (today, family_id))
+                self.cursor.execute("UPDATE users SET quiz_attempts = 0, last_quiz_date = ? WHERE user_id = ?", (today, user_id))
                 return True, 5
             
             if attempts >= 5:
                 return False, 0
             return True, 5 - attempts
 
-    def increment_quiz_attempt(self, family_id):
+    def increment_quiz_attempt(self, user_id):
         import datetime
         with self.connection:
             today = datetime.date.today()
-            self.cursor.execute("UPDATE families SET quiz_attempts = quiz_attempts + 1, last_quiz_date = ? WHERE id = ?", (today, family_id))
+            self.cursor.execute("UPDATE users SET quiz_attempts = quiz_attempts + 1, last_quiz_date = ? WHERE user_id = ?", (today, user_id))
 
     # --- КОЛЕСО ФОРТУНИ ---
     def check_fortune(self, user_id):

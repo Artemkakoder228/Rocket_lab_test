@@ -8,9 +8,25 @@ import requests
 import math
 from config import BOT_TOKEN
 
+import time
+
 # Вказуємо, що статичні файли (html, css, js) лежать прямо тут ('.')
 app = Flask(__name__, static_folder='.', static_url_path='')
 CORS(app)
+
+@app.before_request
+def start_timer():
+    request.start_time = time.perf_counter()
+
+@app.after_request
+def log_request_time(response):
+    if hasattr(request, 'start_time'):
+        end_time = time.perf_counter()
+        elapsed_ms = (end_time - request.start_time) * 1000
+        # Ігноруємо статику для чистоти логів, логуємо тільки API
+        if request.path.startswith('/api'):
+            print(f"⏱ [API PERF] {request.method} {request.path} | Час обробки: {elapsed_ms:.2f} ms")
+    return response
 
 # Підключення до бази (залишається як було)
 db = Database() 
@@ -259,13 +275,14 @@ def buy_shop_item():
 @app.route('/api/quiz', methods=['GET'])
 def get_quiz():
     family_id = request.args.get('family_id')
+    user_id = request.args.get('user_id')
     planet = request.args.get('planet', 'Earth').capitalize() 
     difficulty = request.args.get('difficulty', 'easy')
     
-    if not family_id: return jsonify({'error': 'Не вказано ID сім\'ї'}), 400
+    if not family_id or not user_id: return jsonify({'error': 'Не вказано ID сім\'ї або користувача'}), 400
 
-    # ПЕРЕВІРКА НА 5 СПРОБ В ДЕНЬ
-    can_play, attempts_left = db.check_quiz_attempts(family_id)
+    # ПЕРЕВІРКА НА 5 СПРОБ В ДЕНЬ ДЛЯ ГРАВЦЯ
+    can_play, attempts_left = db.check_quiz_attempts(user_id)
     if not can_play:
         return jsonify({'error': '⏳ Ви використали всі 5 спроб на сьогодні. Повертайтесь завтра!'}), 403
 
@@ -297,10 +314,16 @@ def get_quiz():
 @app.route('/api/quiz/answer', methods=['POST'])
 def submit_quiz_answer():
     data = request.json
-    family_id, quiz_id, user_answer_index = data.get('family_id'), data.get('quiz_id'), data.get('answer')
+    family_id = data.get('family_id')
+    quiz_id = data.get('quiz_id')
+    user_answer_index = data.get('answer')
+    user_id = data.get('user_id')
     
+    if not all([family_id, quiz_id, user_id]):
+        return jsonify({'success': False, 'message': 'Бракує даних (family, user, quiz)'})
+
     # ЗБІЛЬШУЄМО ЛІЧИЛЬНИК СПРОБ, КОЛИ ГРАВЕЦЬ ДАВ ВІДПОВІДЬ
-    db.increment_quiz_attempt(family_id)
+    db.increment_quiz_attempt(user_id)
 
     quiz = db.get_quiz_by_id(quiz_id)
     if not quiz: return jsonify({'success': False, 'message': 'Питання не знайдено'})
@@ -320,6 +343,15 @@ def submit_quiz_answer():
         elif planet.lower() == 'mars': res_text = f"{res_main} Кремнію та {res_rare} Оксиду"
         elif planet.lower() == 'jupiter': res_text = f"{res_main} Водню та {res_rare} Гелію"
         else: res_text = ""
+        
+        
+        db.cursor.execute("SELECT username FROM users WHERE user_id = ?", (user_id,))
+        ures = db.cursor.fetchone()
+        u_name = ures[0] if ures else "Гравець"
+        
+        diff_text = "легкого" if quiz[3] else "складного" # just approximation
+        msg_text = f"🎓 **{u_name}** блискуче розгадав питання щодо планети **{planet}** та приніс сім'ї {reward_coins} 🪙!"
+        db.add_chat_message(family_id, user_id, "🤖 Лабораторія", msg_text)
         
         return jsonify({
             'success': True, 
@@ -439,7 +471,7 @@ def fortune_spin():
         # Сповіщаємо всіх членів сім'ї (як ви хотіли раніше)
         with db.lock:
             with db.connection:
-                db.cursor.execute("SELECT user_id FROM users WHERE family_id = %s", (family_id,))
+                db.cursor.execute("SELECT user_id FROM users WHERE family_id = ?", (family_id,))
                 members = db.cursor.fetchall()
         for m in members:
             try: requests.post(url, json={"chat_id": str(m[0]), "text": msg, "parse_mode": "HTML"})
@@ -502,7 +534,7 @@ def get_raid_targets():
 
         with db.lock:
             with db.connection:
-                db.cursor.execute("SELECT id, name, balance, under_attack_until FROM families WHERE current_planet = %s ORDER BY id", (my_planet,))
+                db.cursor.execute("SELECT id, name, balance, under_attack_until FROM families WHERE current_planet = ? ORDER BY id", (my_planet,))
                 rows = db.cursor.fetchall()
         
         targets = []
@@ -559,11 +591,11 @@ def process_raid_battle(attacker_id, target_id, raid_time):
         
         with db.lock:
             with db.connection:
-                db.cursor.execute("SELECT name FROM families WHERE id = %s", (attacker_id,))
+                db.cursor.execute("SELECT name FROM families WHERE id = ?", (attacker_id,))
                 att_res = db.cursor.fetchone()
                 attacker_name = att_res[0] if att_res else "Невідомі"
                 
-                db.cursor.execute("SELECT balance, name FROM families WHERE id = %s", (target_id,))
+                db.cursor.execute("SELECT balance, name FROM families WHERE id = ?", (target_id,))
                 t_data = db.cursor.fetchone()
                 target_balance = t_data[0] if t_data else 0
                 target_name = t_data[1] if t_data else "Невідомі"
@@ -576,8 +608,8 @@ def process_raid_battle(attacker_id, target_id, raid_time):
             loot = int(target_balance * random.uniform(0.1, 0.15))
             with db.lock:
                 with db.connection:
-                    db.cursor.execute("UPDATE families SET balance = balance - %s, shield_until = CURRENT_TIMESTAMP + INTERVAL '4 hours', under_attack_until = NULL WHERE id = %s", (loot, target_id))
-                    db.cursor.execute("UPDATE families SET balance = balance + %s WHERE id = %s", (loot, attacker_id))
+                    db.cursor.execute("UPDATE families SET balance = balance - ?, shield_until = datetime('now', '+4 hours'), under_attack_until = NULL WHERE id = ?", (loot, target_id))
+                    db.cursor.execute("UPDATE families SET balance = balance + ? WHERE id = ?", (loot, attacker_id))
                     db.connection.commit()
             atk_msg = f"✅ <b>Рейд завершено!</b>\nМи розгромили <b>{target_name}</b> та викрали <b>{loot}</b> 🪙"
             def_msg = f"💔 <b>Нас пограбували!</b>\nСім'я <b>{attacker_name}</b> викрала <b>{loot}</b> 🪙. Увімкнено щит на 4г."
@@ -585,7 +617,7 @@ def process_raid_battle(attacker_id, target_id, raid_time):
             with db.lock:
                 with db.connection:
                     # ВИПРАВЛЕНО: додано кому (target_id,)
-                    db.cursor.execute("UPDATE families SET under_attack_until = NULL WHERE id = %s", (target_id,))
+                    db.cursor.execute("UPDATE families SET under_attack_until = NULL WHERE id = ?", (target_id,))
                     db.connection.commit()
             atk_msg = f"💥 <b>Поразка в рейді!</b>\nЗахист <b>{target_name}</b> виявився сильнішим. Флот повернувся ні з чим."
             def_msg = f"🛡 <b>Напад відбито!</b>\nСім'я <b>{attacker_name}</b> намагалася нас атакувати, але наші системи захисту впорались!"
@@ -594,7 +626,7 @@ def process_raid_battle(attacker_id, target_id, raid_time):
         for fid, msg in [(attacker_id, atk_msg), (target_id, def_msg)]:
             with db.lock:
                 with db.connection:
-                    db.cursor.execute("SELECT user_id FROM users WHERE family_id = %s", (fid,))
+                    db.cursor.execute("SELECT user_id FROM users WHERE family_id = ?", (fid,))
                     users = [r[0] for r in db.cursor.fetchall()]
             for uid in users:
                 try: requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage", json={"chat_id": str(uid), "text": msg, "parse_mode": "HTML"})
@@ -612,33 +644,33 @@ def attack_target():
         with db.lock:
             with db.connection:
                 # Перевірки перед атакою
-                db.cursor.execute("SELECT last_raid_time FROM families WHERE id = %s", (attacker_id,))
+                db.cursor.execute("SELECT last_raid_time FROM families WHERE id = ?", (attacker_id,))
                 last_r = db.cursor.fetchone()
                 if last_r and last_r[0] and last_r[0] > datetime.datetime.now():
                     return jsonify({'error': 'Ваш флот вже у польоті!'})
 
-                db.cursor.execute("SELECT under_attack_until FROM families WHERE id = %s", (target_id,))
+                db.cursor.execute("SELECT under_attack_until FROM families WHERE id = ?", (target_id,))
                 t_attack = db.cursor.fetchone()
                 if t_attack and t_attack[0] and t_attack[0] > datetime.datetime.now():
                     return jsonify({'error': 'Ця колонія вже під облогою!'})
 
                 # Встановлюємо статус облоги та кулдаун
                 end_attack = datetime.datetime.now() + datetime.timedelta(minutes=r_time)
-                db.cursor.execute("UPDATE families SET under_attack_until = %s WHERE id = %s", (end_attack, target_id))
-                db.cursor.execute("UPDATE families SET last_raid_time = %s WHERE id = %s", (datetime.datetime.now() + datetime.timedelta(minutes=r_time*2), attacker_id))
+                db.cursor.execute("UPDATE families SET under_attack_until = ? WHERE id = ?", (end_attack, target_id))
+                db.cursor.execute("UPDATE families SET last_raid_time = ? WHERE id = ?", (datetime.datetime.now() + datetime.timedelta(minutes=r_time*2), attacker_id))
                 db.connection.commit()
                 
                 # Отримуємо імена для гарних сповіщень
-                db.cursor.execute("SELECT name FROM families WHERE id = %s", (attacker_id,))
+                db.cursor.execute("SELECT name FROM families WHERE id = ?", (attacker_id,))
                 attacker_name = db.cursor.fetchone()[0]
-                db.cursor.execute("SELECT name FROM families WHERE id = %s", (target_id,))
+                db.cursor.execute("SELECT name FROM families WHERE id = ?", (target_id,))
                 target_name = db.cursor.fetchone()[0]
 
         # МИТТЄВІ СПОВІЩЕННЯ В TELEGRAM
         def notify(fid, text):
             with db.lock:
                 with db.connection:
-                    db.cursor.execute("SELECT user_id FROM users WHERE family_id = %s", (fid,))
+                    db.cursor.execute("SELECT user_id FROM users WHERE family_id = ?", (fid,))
                     uids = [r[0] for r in db.cursor.fetchall()]
             for uid in uids:
                 try: requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage", json={"chat_id": str(uid), "text": text, "parse_mode": "HTML"})

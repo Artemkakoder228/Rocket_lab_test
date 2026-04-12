@@ -159,7 +159,7 @@
             document.getElementById('attemptsDisplay').innerText = ''; // Очищаємо
 
             try {
-                const res = await fetch(`/api/quiz?family_id=${familyId}&planet=${planet}&difficulty=${currentDiff}`);
+                const res = await fetch(`/api/quiz?family_id=${familyId}&user_id=${userId}&planet=${planet}&difficulty=${currentDiff}`);
                 if (!res.ok) {
                     const errData = await res.json().catch(() => ({}));
                     document.getElementById('questionText').innerText = errData.error || "Питань цієї складності поки немає!";
@@ -196,7 +196,7 @@
             const res = await fetch('/api/quiz/answer', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ family_id: familyId, quiz_id: currentQuizId, answer: selectedIndex })
+                body: JSON.stringify({ family_id: familyId, user_id: userId, quiz_id: currentQuizId, answer: selectedIndex })
             });
             const result = await res.json();
 

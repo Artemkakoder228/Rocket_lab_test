@@ -17,10 +17,12 @@ async def open_raid_radar(message: types.Message):
         return
 
     # Посилання на наш новий радар
-    url = f"{WEB_APP_URL}/raids.html?family_id={family_id}&user_id={user_id}"
+    url_radar = f"{WEB_APP_URL}/raids.html?family_id={family_id}&user_id={user_id}"
+    url_cc = f"{WEB_APP_URL}/command_center.html?family_id={family_id}&user_id={user_id}"
     
     kb = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🗺 Відкрити Радар Рейдів", web_app=WebAppInfo(url=url))]
+        [InlineKeyboardButton(text="🗺 Відкрити Радар Рейдів", web_app=WebAppInfo(url=url_radar))],
+        [InlineKeyboardButton(text="🛡 Центр командування військами", web_app=WebAppInfo(url=url_cc))]
     ])
     
     await message.answer(

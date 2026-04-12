@@ -127,6 +127,19 @@ CATALOG = {
     # Гілка: Ніс
     'nose_start': {'name': 'Титановий Конус', 'type': 'nose', 'tier': 'IV', 'cost': {'hydrogen': 0, 'helium': 0, 'coins': 0}, 'stats': {'aerodynamics': 90}},
     'nose_adv': {'name': 'Аеро-Композит', 'type': 'nose', 'tier': 'V', 'cost': {'hydrogen': 4500, 'helium': 3000, 'coins': 9000}, 'stats': {'aerodynamics': 200}, 'requires': 'nose_start'},
+
+    # Головна база (Центр) - 5 рівнів
+    'cc_lvl1': {'name': 'Командний Центр I', 'type': 'command', 'tier': 'I', 'cost': {'iron': 1000, 'coins': 500}, 'stats': {'armor': 1000}},
+    'cc_lvl2': {'name': 'Командний Центр II', 'type': 'command', 'tier': 'II', 'cost': {'iron': 2000, 'silicon': 500, 'coins': 1500}, 'stats': {'armor': 2500}, 'requires': 'cc_lvl1'},
+    'cc_lvl3': {'name': 'Командний Центр III', 'type': 'command', 'tier': 'III', 'cost': {'iron': 4000, 'silicon': 1500, 'coins': 3000}, 'stats': {'armor': 5000}, 'requires': 'cc_lvl2'},
+    'cc_lvl4': {'name': 'Командний Центр IV', 'type': 'command', 'tier': 'IV', 'cost': {'iron': 8000, 'silicon': 3000, 'hydrogen': 1000, 'coins': 6000}, 'stats': {'armor': 10000}, 'requires': 'cc_lvl3'},
+    'cc_lvl5': {'name': 'Командний Центр V', 'type': 'command', 'tier': 'V', 'cost': {'iron': 15000, 'silicon': 6000, 'hydrogen': 3000, 'coins': 12000}, 'stats': {'armor': 25000}, 'requires': 'cc_lvl4'},
+
+    # Зброя (Відкривається проти годинникової стрілки)
+    'cc_w1': {'name': 'Лазерна Батарея', 'type': 'weapons', 'tier': 'I', 'cost': {'iron': 1500, 'fuel': 500, 'coins': 1000}, 'stats': {'damage': 300}, 'requires': 'cc_lvl2'},
+    'cc_w2': {'name': 'Іонна Гармата', 'type': 'weapons', 'tier': 'II', 'cost': {'silicon': 2000, 'oxide': 1000, 'coins': 2500}, 'stats': {'damage': 700}, 'requires': 'cc_lvl3'},
+    'cc_w3': {'name': 'Плазмовий Випромінювач', 'type': 'weapons', 'tier': 'III', 'cost': {'hydrogen': 2500, 'helium': 1500, 'coins': 5000}, 'stats': {'damage': 1500}, 'requires': 'cc_lvl4'},
+    'cc_w4': {'name': 'Орбітальний Удар', 'type': 'weapons', 'tier': 'IV', 'cost': {'regolith': 5000, 'he3': 3000, 'coins': 10000}, 'stats': {'damage': 3500}, 'requires': 'cc_lvl5'},
 }
 # --- НОВІ МАРШРУТИ ДЛЯ САЙТУ ---
 

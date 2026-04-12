@@ -1,0 +1,242 @@
+:root {
+    --bg-color: #0d1117;
+    --panel-bg: #161b22;
+    --border-color: #30363d;
+    --text-color: #c9d1d9;
+    --text-muted: #8b949e;
+    --accent-blue: #58a6ff;
+    --accent-green: #3fb950;
+    --btn-bg: #21262d;
+    --btn-hover: #30363d;
+}
+
+* { box-sizing: border-box; }
+
+body, html { 
+    margin: 0; padding: 0; width: 100%; height: 100%; 
+    overflow: hidden; 
+    background-color: var(--bg-color); 
+    font-family: 'Courier New', Courier, monospace; 
+    color: var(--text-color); 
+}
+
+/* ================== HEADER ================== */
+.main-header {
+    position: fixed; top: 0; width: 100%; z-index: 1000;
+    background: rgba(13, 17, 23, 0.95);
+    border-bottom: 1px solid var(--border-color);
+    display: flex; flex-direction: column; align-items: center; 
+    backdrop-filter: blur(5px);
+    padding-bottom: 15px; 
+}
+
+/* Кнопка Назад */
+.back-btn {
+    position: absolute; left: 20px; top: 25px;
+    text-decoration: none; color: var(--text-color);
+    font-size: 14px; font-weight: bold;
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 16px; border-radius: 6px;
+    border: 1px solid var(--border-color);
+    background: var(--btn-bg);
+    transition: all 0.2s ease; z-index: 1100;
+}
+
+.back-btn:hover {
+    background: var(--btn-hover);
+    border-color: var(--text-muted);
+}
+
+.back-btn .arrow {
+    font-size: 18px; transition: transform 0.2s ease;
+}
+.back-btn:hover .arrow { transform: translateX(-3px); }
+
+/* Навігація планет */
+.planet-nav { 
+    display: flex; gap: 15px; 
+    padding: 20px 0 15px 0; 
+}
+
+.planet-btn {
+    text-decoration: none; display: inline-block;
+    background: var(--btn-bg); border: 1px solid var(--border-color); 
+    color: var(--text-color); font-family: inherit; font-size: 13px;
+    padding: 8px 24px; border-radius: 6px; cursor: pointer; 
+    transition: all 0.2s ease;
+}
+
+.planet-btn:hover { background: var(--btn-hover); }
+
+.planet-btn.active {
+    border-color: var(--accent-blue);
+    color: var(--accent-blue);
+    background: rgba(88, 166, 255, 0.1);
+}
+
+.planet-btn.locked-planet {
+    opacity: 0.5; color: var(--text-muted); cursor: not-allowed;
+}
+
+/* Ресурси */
+.resource-row { 
+    display: flex; gap: 30px; padding-bottom: 5px; 
+    font-size: 14px; align-items: center; justify-content: center; 
+}
+
+.res-item { display: flex; align-items: center; gap: 8px; }
+.res-icon { width: 22px; height: 22px; border-radius: 4px; object-fit: contain; }
+.res-label { display: none; /* Можна приховати для мінімалізму, або залишити за бажанням */ }
+.res-item span { color: var(--text-color); font-weight: bold; }
+
+/* ================== GRID & VIEWPORT ================== */
+.viewport { width: 100vw; height: 100vh; position: relative; cursor: grab; background: var(--bg-color); }
+.viewport:active { cursor: grabbing; }
+
+.grid-background {
+    position: absolute; width: 5000px; height: 5000px;
+    top: -1000px; left: -1000px;
+    background-image: linear-gradient(var(--border-color) 1px, transparent 1px), 
+                      linear-gradient(90deg, var(--border-color) 1px, transparent 1px);
+    background-size: 50px 50px; pointer-events: none; z-index: 0; opacity: 0.2;
+}
+
+.tree-canvas { position: absolute; width: 3000px; height: 3000px; z-index: 1; transition: transform 0.1s ease-out; }
+
+/* ================== NODES (МОДУЛІ) ================== */
+.node {
+    position: absolute; 
+    width: 140px; height: 140px;
+    background: var(--panel-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    display: flex; flex-direction: column; align-items: center; 
+    padding: 10px; transition: all 0.2s ease; z-index: 10;
+}
+
+.node:hover { 
+    border-color: var(--accent-blue); 
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+}
+
+.node.owned {
+    border-color: var(--accent-green);
+    box-shadow: 0 0 10px rgba(63, 185, 80, 0.15);
+}
+
+.node-img-box {
+    width: 100%; height: 60px;
+    background: var(--bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 6px; margin-bottom: 8px;
+    display: flex; align-items: center; justify-content: center;
+}
+
+.node-icon { max-width: 70%; max-height: 70%; }
+
+.node-tier {
+    font-size: 10px; color: var(--text-muted);
+    letter-spacing: 1px; margin-bottom: 4px;
+}
+
+.node-title {
+    font-size: 12px; font-weight: bold; text-align: center;
+    color: var(--text-color); margin: 0;
+}
+
+.node-status {
+    width: 100%; height: 20px; display: flex; 
+    justify-content: center; align-items: center; margin-top: auto;
+}
+
+.checkmark { color: var(--accent-green); font-size: 16px; font-weight: bold; }
+
+/* Лінії зв'язку */
+.line { 
+    position: absolute; height: 3px; background: var(--border-color);
+    transform-origin: left; transition: 0.3s ease; z-index: 5;
+}
+
+.line.highlight { 
+    background: var(--accent-blue); 
+    box-shadow: 0 0 8px rgba(88, 166, 255, 0.5); 
+}
+
+/* ================== SIDE PANEL (МОДАЛКА) ================== */
+.side-panel {
+    position: fixed; right: -400px; top: 0; width: 380px; height: 100%;
+    background: var(--panel-bg); border-left: 1px solid var(--border-color);
+    padding: 80px 30px; transition: right 0.3s ease; z-index: 2000;
+}
+
+.side-panel.active { right: 0; box-shadow: -10px 0 20px rgba(0,0,0,0.5); }
+
+.close-btn { 
+    position: absolute; top: 20px; right: 20px; background: none; 
+    border: none; color: var(--text-muted); font-size: 28px; cursor: pointer; transition: 0.2s; 
+}
+.close-btn:hover { color: var(--text-color); transform: scale(1.1); }
+
+.module-image-box {
+    width: 100%; height: 160px; margin-bottom: 20px; border-radius: 8px;
+    background: var(--bg-color); border: 1px solid var(--border-color);
+    display: flex; align-items: center; justify-content: center;
+}
+.module-image-box img { max-width: 80%; max-height: 80%; object-fit: contain; }
+
+.action-btn {
+    width: 100%; padding: 12px 0; margin-top: 16px;
+    font-family: inherit; font-size: 14px; font-weight: bold; color: white;
+    background: #238636; border: none; border-radius: 6px;
+    cursor: pointer; transition: 0.2s ease;
+}
+.action-btn:hover:not(.disabled) { background: #2ea043; }
+.action-btn.disabled { background: var(--btn-bg); color: var(--text-muted); border: 1px solid var(--border-color); cursor: not-allowed; }
+
+/* Вартість */
+.cost-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 20px 0; padding: 15px;
+    background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 8px;
+    opacity: 0; transition: opacity 0.3s;
+}
+.cost-grid.visible { opacity: 1; }
+
+.cost-cell { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+.cost-icon { font-size: 18px; margin-bottom: 5px; }
+.cost-value { font-size: 14px; font-weight: bold; }
+
+/* Кольори ресурсів */
+.val-iron { color: #8b949e; }
+.val-fuel { color: #d29922; }
+.val-coin { color: #f2cc60; }
+
+.cost-owned-msg {
+    grid-column: 1 / -1; color: var(--accent-green);
+    text-align: center; font-size: 14px; font-weight: bold;
+}
+
+/* ================== MEDIA QUERIES (Адаптивність) ================== */
+@media (max-width: 1200px) {
+    .planet-nav { gap: 10px; }
+    .resource-row { gap: 20px; }
+    .back-btn { left: 15px; padding: 6px 12px; }
+}
+
+@media (max-width: 768px) {
+    .main-header { position: relative; height: auto; padding: 10px; }
+    .back-btn { position: relative; top: 0; left: 0; margin-bottom: 10px; align-self: flex-start; }
+    .planet-nav { padding: 5px 0; flex-wrap: wrap; justify-content: center; gap: 8px; }
+    .planet-btn { padding: 6px 16px; font-size: 11px; }
+    .resource-row { gap: 15px; flex-wrap: wrap; justify-content: center; font-size: 13px; }
+    .side-panel { width: 100%; right: -100%; }
+}
+
+@media (max-height: 500px) {
+    .main-header { flex-direction: row; flex-wrap: wrap; justify-content: center; padding: 8px; gap: 15px; }
+    .back-btn { position: static; margin: 0; font-size: 11px; padding: 6px 10px; }
+    .planet-nav { padding: 0; margin: 0; gap: 5px; }
+    .planet-btn { padding: 5px 12px; font-size: 11px; }
+    .resource-row { padding: 0; gap: 10px; font-size: 12px; }
+    .res-icon { width: 18px; height: 18px; }
+}

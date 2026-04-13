@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Центр Командування</title>
-    <link rel="stylesheet" href="command_center.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='CSS/command_center.css') }}">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
@@ -64,6 +64,7 @@
     </div>
 
     <script src="/static/JS/config.js"></script>
-    <script src="command_center.js"></script>
+    <script src="{{ url_for('static', filename='JS/command_center.js') }}" defer></script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </body>
 </html>

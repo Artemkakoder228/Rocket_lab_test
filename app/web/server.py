@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
+from flask import render_template
 from app.core.database import Database
 import datetime
 import random
@@ -797,7 +798,70 @@ def chat_send():
             except Exception as e:
                 print(f"Chat Notification Error: {e}")
 
-    return jsonify({'success': True})
+@app.route('/api/get_cc_data', methods=['GET'])
+def get_cc_data():
+    family_id = request.args.get('family_id')
+    if not family_id:
+        return jsonify({"error": "Missing family_id"}), 400
+        
+    # Використовуємо твій існуючий метод для інвентаря, 
+    # який повертає ресурси та список owned_modules
+    inventory = db.get_full_inventory(family_id)
+    
+    if not inventory:
+        return jsonify({"error": "Family not found"}), 404
+        
+    return jsonify({
+        "resources": inventory['resources'],
+        "owned_modules": inventory['owned_modules']
+    })
+
+@app.route('/api/buy_cc_module', methods=['POST'])
+def buy_cc_module():
+    data = request.json
+    family_id = data.get('family_id')
+    module_id = data.get('module_id')
+    module_data = data.get('module_data') # Отримуємо об'єкт з цінами від JS
+    
+    if not family_id or not module_id or not module_data:
+        return jsonify({"success": False, "error": "Невірні дані запиту"})
+        
+    costs = module_data.get('cost', {})
+    
+    # 1. Перевіряємо, чи є модуль вже в базі (щоб не купити двічі)
+    owned = db.get_family_unlocked_modules(family_id)
+    if module_id in owned:
+        return jsonify({"success": False, "error": "Цей модуль вже вивчено!"})
+        
+    # 2. Отримуємо ресурси сім'ї для перевірки
+    res = db.get_family_resources(family_id)
+    # res мапінг: 0:bal, 1:iron, 2:fuel, 3:regolith, 4:he3, 5:silicon, 6:oxide, 7:hydrogen, 8:helium
+    user_res = {
+        'coins': res[0], 'iron': res[1], 'fuel': res[2],
+        'regolith': res[3], 'he3': res[4], 'silicon': res[5]
+    }
+    
+    # 3. Перевіряємо чи вистачає ресурсів
+    for res_name, amount in costs.items():
+        if user_res.get(res_name, 0) < amount:
+            return jsonify({"success": False, "error": f"Недостатньо ресурсу: {res_name}"})
+            
+    # 4. Списуємо ресурси
+    for res_name, amount in costs.items():
+        db_col = f"res_{res_name}" if res_name != 'coins' else "balance"
+        query = f"UPDATE families SET {db_col} = {db_col} - ? WHERE id = ?"
+        # Напряму робимо запит, або можна адаптувати твій метод deduct_resources
+        with db.connection:
+            db.cursor.execute(query, (amount, family_id))
+            
+    # 5. Додаємо модуль в БД у таблицю family_upgrades
+    with db.connection:
+        db.cursor.execute(
+            "INSERT INTO family_upgrades (family_id, module_id) VALUES (?, ?)", 
+            (family_id, module_id)
+        )
+        
+    return jsonify({"success": True})
 def run_flask():
     # Port 5000 стандартний, Render сам його прокине
     app.run(host='0.0.0.0', port=8000, debug=False, use_reloader=False)

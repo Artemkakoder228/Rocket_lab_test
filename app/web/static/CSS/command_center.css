@@ -1,123 +1,318 @@
-:root {
-    --neon-blue: #00f0ff;
-    --neon-green: #39ff14;
-    --neon-red: #ff003c;
-    --bg-dark: #050a12;
-    --panel-bg: rgba(10, 15, 30, 0.95);
-    --text-main: #e2e8f0;
-}
-
-* { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
-
+/* Базові налаштування для футуристичного стилю */
 body, html {
-    width: 100%; height: 100%;
-    background-color: var(--bg-dark);
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    color: var(--text-main);
-    overflow: hidden;
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background-color: #050510;
+    font-family: 'Courier New', Courier, monospace;
+    color: #0ff; /* Неоновий блакитний */
+    overflow: hidden; /* Щоб зорі не створювали скролл */
 }
 
-/* Космічний фон */
+/* =========================================
+   Анімоване зоряне небо (Паралакс ефект)
+   ========================================= */
+.space-background {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    z-index: 0;
+    background: radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%);
+}
+
+@keyframes animStar {
+    from { transform: translateY(0px); }
+    to { transform: translateY(-2000px); }
+}
+
+.stars, .stars2, .stars3 {
+    position: absolute;
+    top: 0;
+    left: 0;
+    background: transparent;
+}
+
+/* Генерація зірок за допомогою box-shadow */
 .stars {
-    position: absolute; width: 100%; height: 100%; z-index: -2;
-    background: transparent url('https://i.imgur.com/Y77z9u8.png') repeat top center;
+    width: 1px; height: 1px;
+    box-shadow: 100px 200px #FFF, 400px 600px #FFF, 800px 100px #FFF, 1200px 800px #FFF, 500px 300px #FFF, 900px 900px #FFF, 1500px 200px #FFF, 1800px 600px #FFF, 200px 900px #FFF;
+    animation: animStar 50s linear infinite;
 }
-.twinkling {
-    position: absolute; width: 100%; height: 100%; z-index: -1;
-    background: transparent url('https://i.imgur.com/S9X60fC.png') repeat top center;
-    animation: move-twink-back 150s linear infinite;
+.stars2 {
+    width: 2px; height: 2px;
+    box-shadow: 200px 500px #FFF, 700px 100px #FFF, 1100px 600px #FFF, 100px 900px #FFF, 1600px 400px #FFF, 1900px 800px #FFF, 300px 100px #FFF;
+    animation: animStar 100s linear infinite;
 }
-@keyframes move-twink-back { from { background-position: 0 0; } to { background-position: -10000px 5000px; } }
-
-/* Хедер */
-.header {
-    position: fixed; top: 0; width: 100%; padding: 15px;
-    background: rgba(5, 10, 18, 0.8); border-bottom: 1px solid rgba(0, 240, 255, 0.3);
-    text-align: center; z-index: 100; backdrop-filter: blur(10px);
-}
-.header h1 { font-size: 18px; color: var(--neon-blue); letter-spacing: 2px; margin-bottom: 5px;}
-.resources-bar { display: flex; justify-content: center; gap: 15px; font-weight: bold; font-size: 14px; color: #facc15; }
-
-/* Карта вузлів */
-.command-map { position: relative; width: 100%; height: 100vh; }
-
-/* Лінії */
-.lines-container { position: absolute; top: 0; left: 0; z-index: 1; pointer-events: none; }
-.node-line {
-    stroke: rgba(0, 240, 255, 0.3);
-    stroke-width: 2;
-    transition: all 0.3s;
-}
-.node-line.active {
-    stroke: var(--neon-blue);
-    stroke-width: 4;
-    stroke-dasharray: 10;
-    animation: flow 1s linear infinite;
-    filter: drop-shadow(0 0 5px var(--neon-blue));
-}
-@keyframes flow { to { stroke-dashoffset: -20; } }
-
-/* Вузли */
-.node {
-    position: absolute; z-index: 10; display: flex; flex-direction: column; 
-    align-items: center; cursor: pointer; transition: transform 0.2s;
-}
-.node:active { transform: translate(-50%, -50%) scale(0.9) !important; }
-
-.node-circle {
-    background: #0f172a; border: 2px solid rgba(0, 240, 255, 0.5);
-    border-radius: 50%; display: flex; align-items: center; justify-content: center;
-    font-size: 24px; box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
-    transition: all 0.3s;
-}
-.center-node .node-circle { width: 80px; height: 80px; border-width: 3px; }
-.side-node .node-circle { width: 55px; height: 55px; }
-
-.node.selected .node-circle {
-    border-color: var(--neon-blue);
-    box-shadow: 0 0 20px var(--neon-blue), inset 0 0 15px var(--neon-blue);
+.stars3 {
+    width: 3px; height: 3px;
+    box-shadow: 300px 300px #FFF, 600px 800px #FFF, 1300px 500px #FFF, 1800px 900px #FFF, 800px 200px #FFF, 1500px 800px #FFF;
+    animation: animStar 150s linear infinite;
 }
 
-.glowing-blue { border-color: var(--neon-blue) !important; box-shadow: 0 0 15px rgba(0,240,255,0.4); }
-
-.node-abbr { font-size: 28px; font-weight: bold; color: var(--neon-blue); }
-.node-title { font-size: 10px; margin-top: 6px; font-weight: bold; background: rgba(0,0,0,0.7); padding: 2px 6px; border-radius: 4px; }
-.node-lvl { font-size: 12px; color: var(--neon-green); font-weight: bold; margin-top: 2px; }
-
-.center-node { top: 50%; left: 50%; transform: translate(-50%, -50%); }
-.top { top: 20%; left: 50%; transform: translate(-50%, -50%); }
-.bottom { top: 80%; left: 50%; transform: translate(-50%, -50%); }
-.left { top: 50%; left: 20%; transform: translate(-50%, -50%); }
-.right { top: 50%; left: 80%; transform: translate(-50%, -50%); }
-
-/* Інформаційна панель знизу */
-.info-panel {
-    position: fixed; bottom: 0; left: 0; width: 100%;
-    background: var(--panel-bg); border-top: 2px solid var(--neon-blue);
-    padding: 20px; z-index: 1000;
-    box-shadow: 0 -5px 20px rgba(0, 240, 255, 0.2);
-    transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.1, 0.8, 0.3, 1);
-    border-top-left-radius: 20px; border-top-right-radius: 20px;
-    backdrop-filter: blur(10px);
+.stars::after, .stars2::after, .stars3::after {
+    content: " ";
+    position: absolute;
+    top: 2000px;
+    left: 0;
+    width: inherit;
+    height: inherit;
+    background: transparent;
+    box-shadow: inherit;
 }
-.info-panel.show { transform: translateY(0); }
-.hidden { display: none !important; }
 
-.panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-.panel-header h2 { color: var(--neon-blue); font-size: 18px; }
-.close-btn { color: #94a3b8; font-size: 28px; cursor: pointer; line-height: 1; }
-
-.panel-desc { color: #cbd5e1; font-size: 13px; margin-bottom: 15px; line-height: 1.4; }
-.effect-box, .cost-box { background: rgba(0,0,0,0.5); padding: 10px; border-radius: 8px; margin-bottom: 10px; font-size: 14px; border: 1px solid #334155; }
-
-.highlight-green { color: var(--neon-green); font-weight: bold; }
-.highlight-yellow { color: #facc15; font-weight: bold; }
-
-.btn-buy {
-    width: 100%; background: var(--neon-blue); color: #000;
-    border: none; padding: 15px; font-weight: bold; font-size: 16px;
-    border-radius: 8px; cursor: pointer; margin-top: 5px;
-    box-shadow: 0 0 10px rgba(0,240,255,0.4); transition: background 0.2s;
+/* =========================================
+   Інтерфейс Центру Командування
+   ========================================= */
+.command-center-container {
+    position: relative;
+    z-index: 1; /* Поверх зоряного неба */
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    padding: 20px 40px;
+    box-sizing: border-box;
+    background: rgba(0, 0, 0, 0.4);
 }
-.btn-buy:active { background: #fff; }
-.btn-buy:disabled { background: #475569; color: #94a3b8; box-shadow: none; }
+
+.top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid rgba(0, 255, 255, 0.5);
+    padding-bottom: 10px;
+    text-shadow: 0 0 10px #0ff;
+}
+
+.top-bar h1 {
+    margin: 0;
+    letter-spacing: 2px;
+}
+
+.resources span {
+    margin-left: 30px;
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+.main-content {
+    flex-grow: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 20px 0;
+}
+
+/* Бічні панелі */
+.sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    width: 220px;
+}
+
+button {
+    background: rgba(0, 255, 255, 0.05);
+    border: 1px solid #0ff;
+    color: #0ff;
+    padding: 15px;
+    font-size: 1rem;
+    font-family: inherit;
+    font-weight: bold;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all 0.3s ease;
+    box-shadow: inset 0 0 10px rgba(0, 255, 255, 0.1);
+    backdrop-filter: blur(5px);
+}
+
+button:hover {
+    background: #0ff;
+    color: #000;
+    box-shadow: 0 0 20px #0ff;
+    transform: scale(1.05);
+}
+
+/* Блоки статистики справа */
+.stat-box {
+    border: 1px solid rgba(0, 255, 255, 0.3);
+    padding: 15px;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(5px);
+    text-align: center;
+    border-radius: 5px;
+}
+
+.stat-box h3 { margin: 0 0 10px 0; font-size: 0.9rem; color: #88f; }
+.status-online { color: #0f0; text-shadow: 0 0 10px #0f0; font-weight: bold; margin: 0;}
+
+/* Центральна голограма / Анімація планети */
+.center-display {
+    flex-grow: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.hologram-wrapper {
+    position: relative;
+    width: 300px;
+    height: 300px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.planet-hologram {
+    width: 250px;
+    height: 250px;
+    border-radius: 50%;
+    /* Можна замінити на background-image: url('images/Earth.png') з твого репозиторію */
+    background: radial-gradient(circle, rgba(0,255,255,0.8) 0%, rgba(0,0,0,0.9) 70%);
+    box-shadow: 0 0 40px rgba(0, 255, 255, 0.4);
+    animation: pulsePlanet 4s infinite alternate;
+}
+
+.radar-scan {
+    position: absolute;
+    width: 300px;
+    height: 300px;
+    border-radius: 50%;
+    border: 1px solid rgba(0, 255, 255, 0.2);
+    border-top: 2px solid #0ff;
+    animation: scanRadar 3s linear infinite;
+}
+
+@keyframes pulsePlanet {
+    from { transform: scale(1); box-shadow: 0 0 30px rgba(0, 255, 255, 0.2); }
+    to { transform: scale(1.02); box-shadow: 0 0 60px rgba(0, 255, 255, 0.6); }
+}
+
+@keyframes scanRadar {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Нижня панель */
+.bottom-bar {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    padding-top: 20px;
+    border-top: 2px solid rgba(0, 255, 255, 0.5);
+}
+
+.action-btn {
+    width: 250px;
+    padding: 20px;
+}
+
+.start-btn {
+    border-color: #f00;
+    color: #f00;
+    box-shadow: inset 0 0 10px rgba(255, 0, 0, 0.2);
+}
+
+.start-btn:hover {
+    background: #f00;
+    color: #fff;
+    box-shadow: 0 0 25px #f00;
+}
+
+/* =========================================
+   ДЕРЕВО РОЗРОБОК (TECH TREE)
+   ========================================= */
+
+.tree-container {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    z-index: 1; /* Поверх зоряного неба */
+    overflow: hidden; /* або 'auto', якщо дерево дуже велике і потрібен скролл */
+}
+
+/* Налаштування ліній */
+.tree-lines {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    pointer-events: none; /* Щоб лінії не блокували кліки по фону чи кнопкам */
+}
+
+.connection-line {
+    stroke: rgba(0, 255, 255, 0.4);
+    stroke-width: 3;
+    stroke-dasharray: 10 5; /* Пунктирна лінія */
+    animation: flowEnergy 2s linear infinite; /* Анімація руху енергії */
+}
+
+@keyframes flowEnergy {
+    from { stroke-dashoffset: 15; }
+    to { stroke-dashoffset: 0; }
+}
+
+/* Налаштування самих вузлів (кнопок) */
+.tree-node {
+    position: absolute;
+    z-index: 2;
+    transform: translate(-50%, -50%); /* Центрує елемент відносно його координат */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 160px;
+    padding: 15px 10px;
+    background: rgba(5, 5, 16, 0.8);
+    border: 2px solid #0ff;
+    border-radius: 10px;
+    cursor: pointer;
+    text-align: center;
+    backdrop-filter: blur(5px);
+    transition: all 0.3s ease;
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.2);
+}
+
+.tree-node:hover {
+    transform: translate(-50%, -50%) scale(1.1);
+    box-shadow: 0 0 30px #0ff;
+    background: rgba(0, 255, 255, 0.1);
+    z-index: 3;
+}
+
+/* Іконки всередині вузлів */
+.node-icon {
+    font-size: 2rem;
+    margin-bottom: 5px;
+    filter: drop-shadow(0 0 5px #0ff);
+}
+
+.node-name {
+    font-weight: bold;
+    font-size: 0.9rem;
+    color: #fff;
+    text-shadow: 0 0 5px #0ff;
+    margin-bottom: 5px;
+}
+
+.node-cost, .node-lvl {
+    font-size: 0.8rem;
+    color: #0ff;
+}
+
+/* Статуси розробок */
+.tree-node.active {
+    border-color: #0f0; /* Зелений для вже вивченого */
+    box-shadow: 0 0 15px rgba(0, 255, 0, 0.3);
+}
+.tree-node.active .node-name { text-shadow: 0 0 5px #0f0; }
+
+.tree-node.locked {
+    border-color: #555; /* Сірий для заблокованого */
+    background: rgba(0, 0, 0, 0.8);
+    box-shadow: none;
+    cursor: not-allowed;
+}
+.tree-node.locked .node-name { color: #888; text-shadow: none; }
+.tree-node.locked .node-icon { filter: grayscale(100%); opacity: 0.5; }
+.tree-node.locked .node-cost { color: #f00; } /* Червоний текст для вимог */

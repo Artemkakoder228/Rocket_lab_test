@@ -2,77 +2,57 @@
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Центр Командування</title>
-    <link rel="stylesheet" href="/static/CSS/command_center.css?v=4.0">
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Дерево Розробок | Rocket Lab</title>
+    <link rel="stylesheet" href="/static/CSS/command_center.css">
 </head>
 <body>
-    <div class="stars"></div>
-    <div class="twinkling"></div>
-
-    <div class="header">
-        <h1>ЦЕНТР КОМАНДУВАННЯ</h1>
-        <div class="resources-bar" id="resources-bar">
-            <span>💰 <span id="res-coins">15000</span></span>
-            <span>🔩 <span id="res-iron">500</span></span>
-            <span>⛽ <span id="res-fuel">200</span></span>
-        </div>
+    <div class="space-background">
+        <div class="stars"></div>
+        <div class="stars2"></div>
+        <div class="stars3"></div>
     </div>
 
-    <div class="command-map">
-        <svg class="lines-container" width="100%" height="100%">
-            <line x1="50%" y1="50%" x2="50%" y2="20%" class="node-line" id="line-laser" />
-            <line x1="50%" y1="50%" x2="20%" y2="50%" class="node-line" id="line-ion" />
-            <line x1="50%" y1="50%" x2="50%" y2="80%" class="node-line" id="line-plasma" />
-            <line x1="50%" y1="50%" x2="80%" y2="50%" class="node-line" id="line-orbital" />
+    <div class="tree-container">
+        
+        <svg class="tree-lines">
+            <line x1="50%" y1="15%" x2="25%" y2="45%" class="connection-line" />
+            <line x1="50%" y1="15%" x2="50%" y2="45%" class="connection-line" />
+            <line x1="50%" y1="15%" x2="75%" y2="45%" class="connection-line" />
+            
+            <line x1="50%" y1="45%" x2="50%" y2="75%" class="connection-line" />
         </svg>
 
-        <div class="node center-node" id="node-cc" onclick="selectNode('cc')">
-            <div class="node-circle glowing-blue"><span class="node-abbr">ЦК</span></div>
-            <span class="node-title">Центр Командування</span>
-            <div class="node-lvl" id="lvl-cc">Lvl 10</div>
+        <div class="tree-node active" style="top: 15%; left: 50%;">
+            <div class="node-icon">🏢</div> 
+            <div class="node-name">Центр Командування</div>
+            <div class="node-lvl">Рівень MAX</div>
         </div>
 
-        <div class="node side-node top" id="node-laser" onclick="selectNode('laser')">
-            <div class="node-circle">🔫</div>
-            <span class="node-title">Лазерна Батарея</span>
-            <div class="node-lvl" id="lvl-laser">Lvl 0</div>
+        <div class="tree-node available" style="top: 45%; left: 25%;">
+            <div class="node-icon"><img src="/static/images/Blasters.png" alt="Бластери" width="40"></div>
+            <div class="node-name">Зброя (Бластери)</div>
+            <div class="node-cost">💰 5,000</div>
         </div>
 
-        <div class="node side-node left" id="node-ion" onclick="selectNode('ion')">
-            <div class="node-circle">⚡</div>
-            <span class="node-title">Іонна Гармата</span>
-            <div class="node-lvl" id="lvl-ion">Lvl 0</div>
+        <div class="tree-node active" style="top: 45%; left: 50%;">
+            <div class="node-icon"><img src="/static/images/Korpus.png" alt="Корпус" width="40"></div>
+            <div class="node-name">Корпус</div>
+            <div class="node-lvl">Рівень 2</div>
         </div>
 
-        <div class="node side-node bottom" id="node-plasma" onclick="selectNode('plasma')">
-            <div class="node-circle">🔥</div>
-            <span class="node-title">Плазмовий Випромінювач</span>
-            <div class="node-lvl" id="lvl-plasma">Lvl 0</div>
+        <div class="tree-node locked" style="top: 45%; left: 75%;">
+            <div class="node-icon"><img src="/static/images/Turbina.png" alt="Турбіна" width="40"></div>
+            <div class="node-name">Двигуни</div>
+            <div class="node-cost">🔒 Потрібен Центр 3</div>
         </div>
 
-        <div class="node side-node right" id="node-orbital" onclick="selectNode('orbital')">
-            <div class="node-circle">🌌</div>
-            <span class="node-title">Орбітальний Удар</span>
-            <div class="node-lvl" id="lvl-orbital">Lvl 0</div>
+        <div class="tree-node available" style="top: 75%; left: 50%;">
+            <div class="node-icon"><img src="/static/images/Titan.png" alt="Титан" width="40"></div>
+            <div class="node-name">Титанова броня</div>
+            <div class="node-cost">💰 12,000</div>
         </div>
+
     </div>
-
-    <div id="info-panel" class="info-panel hidden">
-        <div class="panel-header">
-            <h2 id="panel-title">Виберіть систему</h2>
-            <span class="close-btn" onclick="closePanel()">&times;</span>
-        </div>
-        <p id="panel-desc" class="panel-desc">Натисніть на будь-який вузол для відображення інформації.</p>
-        
-        <div id="upgrade-info" class="hidden">
-            <div class="effect-box">Ефект: <span id="panel-effect" class="highlight-green"></span></div>
-            <div class="cost-box">Вартість: <span id="panel-cost" class="highlight-yellow"></span></div>
-            <button class="btn-buy" id="btn-buy" onclick="buyUpgrade()">ПОКРАЩИТИ</button>
-        </div>
-    </div>
-
-    <script src="/static/JS/command_center.js?v=4.0"></script>
 </body>
 </html>

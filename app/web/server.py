@@ -155,6 +155,10 @@ def serve_static(path):
     if path.endswith('.html'):
         return send_from_directory(app.template_folder, path)
     
+    # Виправляємо проблему з подвійним static/
+    if path.startswith('static/'):
+        path = path.replace('static/', '', 1)
+        
     # Інакше (CSS, JS, images), використовуємо статику
     return app.send_static_file(path)
 

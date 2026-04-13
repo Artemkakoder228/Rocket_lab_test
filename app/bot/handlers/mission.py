@@ -154,13 +154,13 @@ async def confirm_launch(call: types.CallbackQuery):
 
     # Отримуємо ID місії з таблиці launches, щоб дізнатися час польоту
     # Напряму через курсор, бо окремого методу get_launch_info немає
-    conn = db.connection
-    with conn.cursor() as c:
-        c.execute("SELECT mission_id FROM launches WHERE id=%s", (lid,))
-        row = c.fetchone()
-        if not row:
-            return await call.answer("Помилка запуску", show_alert=True)
-        mid = row[0]
+    c = db.connection.cursor()
+    c.execute("SELECT mission_id FROM launches WHERE id=?", (lid,)) # Замінили %s на ?
+    row = c.fetchone()
+    
+    if not row:
+        return await call.answer("Помилка запуску", show_alert=True)
+    mid = row[0]
     
     mis = db.get_mission_by_id(mid)
     flight_time = mis[10]

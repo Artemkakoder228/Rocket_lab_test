@@ -4,67 +4,75 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Центр Командування</title>
-    <link rel="stylesheet" href="/static/CSS/command_center.css?v=1.1">
+    <link rel="stylesheet" href="/static/CSS/command_center.css?v=4.0">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
+    <div class="stars"></div>
+    <div class="twinkling"></div>
+
     <div class="header">
-        <h1>Центр Командування</h1>
+        <h1>ЦЕНТР КОМАНДУВАННЯ</h1>
         <div class="resources-bar" id="resources-bar">
-            </div>
+            <span>💰 <span id="res-coins">15000</span></span>
+            <span>🔩 <span id="res-iron">500</span></span>
+            <span>⛽ <span id="res-fuel">200</span></span>
+        </div>
     </div>
 
-    <div class="cc-tree-container">
-        
-        <svg class="cc-lines" width="100%" height="100%">
-            <line x1="50%" y1="50%" x2="50%" y2="15%" class="tech-line" id="line-w1" />
-            <line x1="50%" y1="50%" x2="15%" y2="50%" class="tech-line" id="line-w2" />
-            <line x1="50%" y1="50%" x2="50%" y2="85%" class="tech-line" id="line-w3" />
-            <line x1="50%" y1="50%" x2="85%" y2="50%" class="tech-line" id="line-w4" />
+    <div class="command-map">
+        <svg class="lines-container" width="100%" height="100%">
+            <line x1="50%" y1="50%" x2="50%" y2="20%" class="node-line" id="line-laser" />
+            <line x1="50%" y1="50%" x2="20%" y2="50%" class="node-line" id="line-ion" />
+            <line x1="50%" y1="50%" x2="50%" y2="80%" class="node-line" id="line-plasma" />
+            <line x1="50%" y1="50%" x2="80%" y2="50%" class="node-line" id="line-orbital" />
         </svg>
 
-        <div class="tech-node center-node locked" id="node-cc_lvl" onclick="openModuleModal('cc_lvl')">
-            <img src="/static/images/ЦЕНТ КОМАНДУВАННЯ.jpg" alt="Центр">
-            <span class="node-label">Командний Центр</span>
-            <div class="lvl-badge" id="cc-lvl-badge">Lvl 1</div>
+        <div class="node center-node" id="node-cc" onclick="selectNode('cc')">
+            <div class="node-circle glowing-blue"><span class="node-abbr">ЦК</span></div>
+            <span class="node-title">Центр Командування</span>
+            <div class="node-lvl" id="lvl-cc">Lvl 10</div>
         </div>
 
-        <div class="tech-node peripheral-node top-node locked" id="node-cc_w1" onclick="openModuleModal('cc_w1')">
-            <div class="icon-placeholder">🔫</div>
-            <span class="node-label">Лазерна Батарея</span>
+        <div class="node side-node top" id="node-laser" onclick="selectNode('laser')">
+            <div class="node-circle">🔫</div>
+            <span class="node-title">Лазерна Батарея</span>
+            <div class="node-lvl" id="lvl-laser">Lvl 0</div>
         </div>
 
-        <div class="tech-node peripheral-node left-node locked" id="node-cc_w2" onclick="openModuleModal('cc_w2')">
-            <div class="icon-placeholder">⚡</div>
-            <span class="node-label">Іонна Гармата</span>
+        <div class="node side-node left" id="node-ion" onclick="selectNode('ion')">
+            <div class="node-circle">⚡</div>
+            <span class="node-title">Іонна Гармата</span>
+            <div class="node-lvl" id="lvl-ion">Lvl 0</div>
         </div>
 
-        <div class="tech-node peripheral-node bottom-node locked" id="node-cc_w3" onclick="openModuleModal('cc_w3')">
-            <div class="icon-placeholder">🔥</div>
-            <span class="node-label">Плазмовий Випромінювач</span>
+        <div class="node side-node bottom" id="node-plasma" onclick="selectNode('plasma')">
+            <div class="node-circle">🔥</div>
+            <span class="node-title">Плазмовий Випромінювач</span>
+            <div class="node-lvl" id="lvl-plasma">Lvl 0</div>
         </div>
 
-        <div class="tech-node peripheral-node right-node locked" id="node-cc_w4" onclick="openModuleModal('cc_w4')">
-            <div class="icon-placeholder">🌌</div>
-            <span class="node-label">Орбітальний Удар</span>
-        </div>
-    </div>
-
-    <div id="module-modal" class="modal">
-        <div class="modal-content">
-            <span class="close-btn" onclick="closeModal()">&times;</span>
-            <h2 id="modal-title">Назва Модуля</h2>
-            <div class="modal-body">
-                <p id="modal-desc" class="desc-text"></p>
-                <div class="stats-box" id="modal-stats"></div>
-                <div class="cost-box" id="modal-cost"></div>
-            </div>
-            <button id="buy-btn" class="action-btn" onclick="buyModule()">Покращити</button>
+        <div class="node side-node right" id="node-orbital" onclick="selectNode('orbital')">
+            <div class="node-circle">🌌</div>
+            <span class="node-title">Орбітальний Удар</span>
+            <div class="node-lvl" id="lvl-orbital">Lvl 0</div>
         </div>
     </div>
 
-    <script src="/static/JS/config.js"></script>
-    <body>
-    <script src="/static/JS/config.js?v=1.1"></script>
-    <script src="/static/JS/command_center.js?v=1.1"></script>
+    <div id="info-panel" class="info-panel hidden">
+        <div class="panel-header">
+            <h2 id="panel-title">Виберіть систему</h2>
+            <span class="close-btn" onclick="closePanel()">&times;</span>
+        </div>
+        <p id="panel-desc" class="panel-desc">Натисніть на будь-який вузол для відображення інформації.</p>
+        
+        <div id="upgrade-info" class="hidden">
+            <div class="effect-box">Ефект: <span id="panel-effect" class="highlight-green"></span></div>
+            <div class="cost-box">Вартість: <span id="panel-cost" class="highlight-yellow"></span></div>
+            <button class="btn-buy" id="btn-buy" onclick="buyUpgrade()">ПОКРАЩИТИ</button>
+        </div>
+    </div>
+
+    <script src="/static/JS/command_center.js?v=4.0"></script>
+</body>
 </html>

@@ -1,129 +1,161 @@
 const tg = window.Telegram.WebApp;
 tg.expand();
 
-// Отримуємо параметри з URL (які ми передали з aiogram бота)
-const urlParams = new URLSearchParams(window.location.search);
-const familyId = urlParams.get('family_id');
-
-// Локальний довідник модулів Центру Командування (або можна брати з config.js)
-const CC_MODULES = {
-    "cc_lvl": { name: "Командний Центр", desc: "Основа вашої бази. Збільшує загальний ліміт військ та захист.", cost: { coins: 5000, iron: 1000 }, stats: "Захист бази: +500" },
-    "cc_w1": { name: "Лазерна Батарея", desc: "Базова зброя для захисту від піратів. Висока швидкострільність.", cost: { coins: 2000, iron: 500 }, stats: "Шкода: +50" },
-    "cc_w2": { name: "Іонна Гармата", desc: "Відключає ворожі щити. Ефективна проти важких кораблів.", cost: { coins: 4000, silicon: 200 }, stats: "Пробиття щитів: +30%" },
-    "cc_w3": { name: "Плазмовий Випромінювач", desc: "Наносить колосальну шкоду по площі.", cost: { coins: 6000, fuel: 800 }, stats: "Шкода: +150" },
-    "cc_w4": { name: "Орбітальний Удар", desc: "Ультимативна зброя масового ураження. Доступна роз в 24 години.", cost: { coins: 15000, he3: 500 }, stats: "Супер-атака" }
+// Початкові ресурси (як на твоєму скріні)
+let userResources = {
+    coins: 15000,
+    iron: 500,
+    fuel: 200
 };
 
-let currentSelectedModule = null;
-
-// Функція завантаження даних при відкритті сторінки
-async function loadCommandCenter() {
-    try {
-        const response = await fetch(`/api/get_cc_data?family_id=${familyId}`);
-        const data = await response.json();
-
-        if (data.error) {
-            tg.showAlert(data.error);
-            return;
-        }
-
-        // Відображаємо ресурси
-        document.getElementById('resources-bar').innerHTML = `
-            💰 ${data.resources.coins} | 🔩 ${data.resources.iron} | ⛽ ${data.resources.fuel}
-        `;
-
-        // Оновлюємо стан вузлів на дереві
-        const owned = data.owned_modules || [];
-        
-        for (const modId in CC_MODULES) {
-            const node = document.getElementById(`node-${modId}`);
-            if (node) {
-                if (owned.includes(modId)) {
-                    node.classList.remove('locked');
-                    node.classList.add('owned');
-                    // Додаємо зелену обводку або ефект для куплених
-                    node.style.borderColor = "#4CAF50"; 
-                }
-            }
-        }
-    } catch (error) {
-        console.error("Помилка завантаження:", error);
+// База даних систем
+let nodesData = {
+    "cc": { 
+        name: "ЦЕНТР КОМАНДУВАННЯ (ЦК)", lvl: 10, 
+        desc: "Основа вашої бази. Збільшує загальний ліміт військ та базовий захист.", 
+        baseCost: { coins: 5000, iron: 100, fuel: 0 }, effectPrefix: "Захист бази: +" 
+    },
+    "laser": { 
+        name: "Лазерна Батарея", lvl: 0, 
+        desc: "Базова зброя для захисту від піратів. Висока швидкострільність.", 
+        baseCost: { coins: 100, iron: 20, fuel: 0 }, effectPrefix: "Шкода (DPS): +" 
+    },
+    "ion": { 
+        name: "Іонна Гармата", lvl: 0, 
+        desc: "Відключає ворожі щити. Ефективна проти важких кораблів.", 
+        baseCost: { coins: 300, iron: 50, fuel: 10 }, effectPrefix: "Пробиття щитів: +" 
+    },
+    "plasma": { 
+        name: "Плазмовий Випромінювач", lvl: 0, 
+        desc: "Наносить колосальну шкоду по площі.", 
+        baseCost: { coins: 800, iron: 100, fuel: 50 }, effectPrefix: "Шкода по площі: +" 
+    },
+    "orbital": { 
+        name: "Орбітальний Удар", lvl: 0, 
+        desc: "Ультимативна зброя масового ураження. Знищує ворогів одним залпом.", 
+        baseCost: { coins: 5000, iron: 200, fuel: 100 }, effectPrefix: "Сила удару: +" 
     }
+};
+
+let currentNode = null;
+
+// Функція оновлення відображення ресурсів
+function updateResourcesUI() {
+    document.getElementById('res-coins').innerText = userResources.coins;
+    document.getElementById('res-iron').innerText = userResources.iron;
+    document.getElementById('res-fuel').innerText = userResources.fuel;
 }
 
-// Функції модального вікна
-function openModuleModal(moduleId) {
-    currentSelectedModule = moduleId;
-    const mod = CC_MODULES[moduleId];
+// Розрахунок вартості для поточного рівня
+function calculateCost(id) {
+    const data = nodesData[id];
+    const multiplier = Math.pow(1.5, data.lvl); // Кожен рівень дорожче на 50%
+    return {
+        coins: Math.floor(data.baseCost.coins * multiplier),
+        iron: Math.floor(data.baseCost.iron * multiplier),
+        fuel: Math.floor(data.baseCost.fuel * multiplier)
+    };
+}
+
+// Розрахунок поточного ефекту
+function calculateEffect(id) {
+    const data = nodesData[id];
+    const val = (data.lvl === 0 && id !== 'cc') ? 0 : (data.lvl * 10) + (id==='cc'? 500 : 0);
+    return `${data.effectPrefix}${val} ➔ ${data.effectPrefix}${val + 10}`;
+}
+
+// Вибір вузла на екрані
+function selectNode(id) {
+    currentNode = id;
+    tg.HapticFeedback.selectionChanged();
+
+    // Знімаємо виділення з усіх
+    document.querySelectorAll('.node').forEach(el => el.classList.remove('selected'));
+    document.querySelectorAll('.node-line').forEach(el => el.classList.remove('active'));
+
+    // Виділяємо вибраний вузол
+    document.getElementById(`node-${id}`).classList.add('selected');
     
-    document.getElementById('modal-title').innerText = mod.name;
-    document.getElementById('modal-desc').innerText = mod.desc;
-    document.getElementById('modal-stats').innerText = `📊 Характеристики: ${mod.stats}`;
+    // Активуємо лінію зв'язку (якщо це не центральний вузол)
+    if (id !== 'cc') {
+        document.getElementById(`line-${id}`).classList.add('active');
+    }
+
+    // Заповнюємо панель
+    const data = nodesData[id];
+    const cost = calculateCost(id);
+    
+    document.getElementById('panel-title').innerText = data.name;
+    document.getElementById('panel-desc').innerText = data.desc;
+    
+    document.getElementById('panel-effect').innerText = calculateEffect(id);
     
     // Формуємо рядок ціни
-    let costText = "Ціна: ";
-    for (let [res, amt] of Object.entries(mod.cost)) {
-        costText += `${amt} ${res} `;
-    }
-    document.getElementById('modal-cost').innerText = costText;
+    let costString = [];
+    if(cost.coins > 0) costString.push(`${cost.coins} 💰`);
+    if(cost.iron > 0) costString.push(`${cost.iron} 🔩`);
+    if(cost.fuel > 0) costString.push(`${cost.fuel} ⛽`);
+    document.getElementById('panel-cost').innerText = costString.join(' | ');
 
-    // Перевіряємо чи вже куплено
-    const node = document.getElementById(`node-${moduleId}`);
-    const btn = document.getElementById('buy-btn');
-    if (node.classList.contains('owned')) {
-        btn.innerText = "Вже вивчено ✅";
-        btn.disabled = true;
-        btn.style.background = "#555";
-    } else {
-        btn.innerText = "Покращити 🚀";
+    // Перевіряємо, чи вистачає ресурсів для кнопки
+    const btn = document.getElementById('btn-buy');
+    if (userResources.coins >= cost.coins && userResources.iron >= cost.iron && userResources.fuel >= cost.fuel) {
         btn.disabled = false;
-        btn.style.background = "#e94560";
+        btn.innerText = "ПОКРАЩИТИ";
+    } else {
+        btn.disabled = true;
+        btn.innerText = "НЕ ВИСТАЧАЄ РЕСУРСІВ";
     }
 
-    document.getElementById('module-modal').style.display = "block";
-    tg.HapticFeedback.impactOccurred('light');
+    // Показуємо панель
+    document.getElementById('upgrade-info').classList.remove('hidden');
+    document.getElementById('info-panel').classList.add('show');
 }
 
-function closeModal() {
-    document.getElementById('module-modal').style.display = "none";
+// Закриття панелі
+function closePanel() {
+    document.getElementById('info-panel').classList.remove('show');
+    document.querySelectorAll('.node').forEach(el => el.classList.remove('selected'));
+    document.querySelectorAll('.node-line').forEach(el => el.classList.remove('active'));
+    currentNode = null;
 }
 
-// Покупка модуля
-async function buyModule() {
-    if (!currentSelectedModule) return;
+// Логіка покращення (Симуляція)
+function buyUpgrade() {
+    if (!currentNode) return;
     
-    tg.MainButton.showProgress();
-    document.getElementById('buy-btn').disabled = true;
-
-    try {
-        const response = await fetch('/api/buy_cc_module', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                family_id: familyId, 
-                module_id: currentSelectedModule,
-                module_data: CC_MODULES[currentSelectedModule] // Передаємо дані про ціну
-            })
-        });
-
-        const result = await response.json();
+    const cost = calculateCost(currentNode);
+    
+    // Подвійна перевірка (про всяк випадок)
+    if (userResources.coins >= cost.coins && userResources.iron >= cost.iron && userResources.fuel >= cost.fuel) {
         
-        if (result.success) {
-            tg.HapticFeedback.notificationOccurred('success');
-            closeModal();
-            loadCommandCenter(); // Оновлюємо сторінку
-        } else {
-            tg.HapticFeedback.notificationOccurred('error');
-            tg.showAlert("❌ " + result.error);
-            document.getElementById('buy-btn').disabled = false;
-        }
-    } catch (e) {
-        tg.showAlert("Помилка з'єднання.");
-        document.getElementById('buy-btn').disabled = false;
-    } finally {
-        tg.MainButton.hideProgress();
+        // Віднімаємо ресурси
+        userResources.coins -= cost.coins;
+        userResources.iron -= cost.iron;
+        userResources.fuel -= cost.fuel;
+        
+        // Піднімаємо рівень
+        nodesData[currentNode].lvl += 1;
+        
+        // Оновлюємо UI
+        updateResourcesUI();
+        document.getElementById(`lvl-${currentNode}`).innerText = `Lvl ${nodesData[currentNode].lvl}`;
+        
+        // Вібрація успіху
+        tg.HapticFeedback.notificationOccurred('success');
+        
+        // Оновлюємо панель для наступного рівня
+        selectNode(currentNode); 
+    } else {
+        tg.HapticFeedback.notificationOccurred('error');
     }
 }
 
-// Запускаємо завантаження при старті
-window.onload = loadCommandCenter;
+// Ініціалізація при старті
+window.onload = () => {
+    updateResourcesUI();
+    // Оновлюємо рівні на UI з бази
+    for (let id in nodesData) {
+        document.getElementById(`lvl-${id}`).innerText = `Lvl ${nodesData[id].lvl}`;
+    }
+};
